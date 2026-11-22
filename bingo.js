@@ -12,10 +12,10 @@
   // ===== ここを自分のFirebaseプロジェクトの値に変更 =====
   const CONFIG = {
     firebase: {
-      apiKey: 'ここにAPI_KEY',
-      authDomain: 'ここにAUTH_DOMAIN',
-      projectId: 'ここにPROJECT_ID',
-      appId: 'ここにAPP_ID'
+      apiKey: 'AIzaSyAIb9hrN0w3RyXDQjNLrlLzckRiqlQfgIA',
+      authDomain: 'takada-bingo.firebaseapp.com',
+      projectId: 'takada-bingo',
+      appId: '1:837777597491:web:869cef6cf186f869daef46'
     },
     adminUid: 'ここに管理者UID'
   };
