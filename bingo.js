@@ -17,7 +17,7 @@
       projectId: 'takada-bingo',
       appId: '1:837777597491:web:869cef6cf186f869daef46'
     },
-    adminUid: 'ここに管理者UID'
+    adminUid: '1uIoMXPsjSWpkM6wTH5rHpSgLtD3'
   };
   // ===================================================
 
