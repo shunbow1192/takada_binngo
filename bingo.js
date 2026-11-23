@@ -458,22 +458,6 @@
     $('finaleLatestNumber').textContent = latest ? String(latest.number) : '？';
     $('finaleCount').textContent = `抽選 ${draws.length}回`;
 
-    const history = $('finaleHistory');
-    history.replaceChildren();
-    if (!draws.length) {
-      const empty = document.createElement('p');
-      empty.className = 'history-empty';
-      empty.textContent = 'まだ抽選されていません';
-      history.appendChild(empty);
-    } else {
-      for (const item of [...draws].reverse()) {
-        const chip = document.createElement('span');
-        chip.className = 'finale-history-chip';
-        chip.textContent = formatDraw(item);
-        history.appendChild(chip);
-      }
-    }
-
     const won = visible && finaleLoaded && !!state.winnerCode;
     $('finaleWinCodeBox').hidden = !won;
     $('finaleWinningCode').textContent = won ? state.winnerCode : '';
