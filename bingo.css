@@ -1392,3 +1392,94 @@ footer small {
 .finale-count {
   display: none !important;
 }
+
+/* ===== 幹事用画面のレイアウト調整 ===== */
+
+/* ① タイトルと管理画面の間に余白 */
+#adminArea {
+  margin-top: 28px;
+}
+
+/* ② A〜Eのボタンを小さくする */
+#finaleAdminLetters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#finaleAdminLetters button {
+  flex: 0 0 54px;
+  width: 54px;
+  height: 54px;
+  aspect-ratio: auto;
+  padding: 0;
+  border-radius: 13px;
+  font-size: 23px;
+}
+
+/* ③ 数字入力欄を通常の抽選と統一 */
+#finaleAdminPanel .finale-input-row {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+#finaleNumberInput {
+  flex: 0 0 170px;
+  width: 170px;
+  max-width: 45%;
+  min-width: 0;
+  height: 49px;
+  padding: 0 15px;
+  border: 2px solid #ddd7e7;
+  border-radius: 13px;
+  background: #fff;
+  color: var(--ink);
+  font-family: Fredoka, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+#finaleNumberInput:focus {
+  border-color: #f66588;
+  outline: none;
+}
+
+#finaleAdminPanel .finale-input-row .btn {
+  width: auto;
+  padding: 12px 21px;
+}
+
+/* スマホ表示の調整 */
+@media (max-width: 640px) {
+  #adminArea {
+    margin-top: 24px;
+  }
+
+  #finaleAdminLetters {
+    gap: 7px;
+  }
+
+  #finaleAdminLetters button {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+    font-size: 20px;
+  }
+
+  #finaleAdminPanel .finale-input-row {
+    gap: 8px;
+  }
+
+  #finaleNumberInput {
+    flex-basis: 125px;
+    width: 125px;
+    max-width: none;
+  }
+
+  #finaleAdminPanel .finale-input-row .btn {
+    width: auto;
+    padding: 12px 13px;
+  }
+}
