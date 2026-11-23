@@ -1374,3 +1374,21 @@ footer small {
   .finale-history-chip { height: 38px; min-width: 70px; }
   .finale-reveal-actions .btn, .finale-admin-actions .btn, .finale-input-row .btn { width: 100%; }
 }
+
+/* ===== 不要な文字を非表示 ===== */
+
+/* 最新はB-1だよ！を消す */
+#latestHelp {
+  display: none !important;
+}
+
+/* これまでに出た番号の「1個」を消す */
+#historyCount {
+  display: none !important;
+}
+
+/* 最後の特別抽選の「抽選0回」を消す */
+#finaleCount,
+.finale-count {
+  display: none !important;
+}
