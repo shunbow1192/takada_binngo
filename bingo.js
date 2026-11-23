@@ -395,34 +395,35 @@
   start();
 })();
 
-/* ===== 高田同窓会・最後の特別抽選（カード裏面のコード：A〜E + 1〜75） =====
-   既存の bingo.js の最後の `})();` より後に、丸ごと追加してください。
-   また、既存の `const IS_ADMIN = ...;` 直後に設定を渡す1行が必要です。
+/* ===== 特別抽選（カード裏面の A〜E + 1〜75）：改良版 =====
+   bingo.js 冒頭の CONFIG と window.TAKADA_FINALE_SETTINGS は変更しない。
+   以前追加した「特別抽選の2番目の (() => { ... })();」を丸ごと削除し、
+   このコードに置き換えてください。重複して貼ると正常に動きません。
 */
 (() => {
   'use strict';
   const settings = window.TAKADA_FINALE_SETTINGS;
   if (!settings) {
-    console.warn('特別抽選の設定がありません。bingo.js 冒頭の設定受け渡し行を確認してください。');
+    console.warn('特別抽選の初期設定がありません。window.TAKADA_FINALE_SETTINGS を確認してください。');
     return;
   }
 
   const $ = id => document.getElementById(id);
   const LETTERS = ['A', 'B', 'C', 'D', 'E'];
+  const PRIZE = '参加費全額返金'; // 景品名は固定
   const isAdmin = settings.isAdmin;
   const validConfig = value => typeof value === 'string' && !!value.trim() && !value.includes('ここに');
   const configured = Object.values(settings.firebase).every(validConfig);
   const validDraw = item => !!item && LETTERS.includes(item.letter) &&
     Number.isInteger(item.number) && item.number >= 1 && item.number <= 75;
-  const cleanDraws = items => Array.isArray(items)
-    ? items.filter(validDraw).slice(0, 100) : [];
+  const cleanDraws = items => Array.isArray(items) ? items.filter(validDraw).slice(0,100) : [];
   const formatDraw = item => `${item.letter}-${item.number}`;
 
   let db, fs, controlRef, finaleRef;
   let user = null;
   let selectedLetter = null;
   let control = { revealed: false };
-  let state = { prize: '', draws: [], winner: '', winnerCode: '' };
+  let state = { draws: [], winnerCode: '' };
   let controlLoaded = false;
   let finaleLoaded = false;
   let busy = false;
@@ -433,29 +434,37 @@
     return isAdmin && configured && controlLoaded && finaleLoaded && !busy &&
       !!user && user.uid === settings.adminUid && navigator.onLine !== false;
   }
+
   function say(message, error = false) {
     if (!isAdmin) return;
     const node = $('finaleAdminMsg');
     node.textContent = message;
     node.style.color = error ? '#ba3352' : '#66547a';
   }
+
   function render() {
     const owner = isAdmin && !!user && user.uid === settings.adminUid;
     const ready = adminReady();
     if (isAdmin) $('finaleAdminPanel').hidden = !owner;
+
+    // 発表前は一般参加者用の特別企画エリアをまるごと非表示
     const visible = control.revealed || owner;
     $('finaleSection').hidden = !visible;
     const draws = visible && finaleLoaded ? state.draws : [];
     const latest = draws.length ? draws[draws.length - 1] : null;
+
+    $('finalePrize').textContent = PRIZE;
     $('finaleLatestLetter').textContent = latest ? latest.letter : '？';
     $('finaleLatestNumber').textContent = latest ? String(latest.number) : '？';
     $('finaleCount').textContent = `抽選 ${draws.length}回`;
-    $('finalePrize').textContent = visible && finaleLoaded ? state.prize : '';
 
     const history = $('finaleHistory');
     history.replaceChildren();
     if (!draws.length) {
-      history.textContent = 'まだ抽選されていません';
+      const empty = document.createElement('p');
+      empty.className = 'history-empty';
+      empty.textContent = 'まだ抽選されていません';
+      history.appendChild(empty);
     } else {
       for (const item of [...draws].reverse()) {
         const chip = document.createElement('span');
@@ -464,46 +473,41 @@
         history.appendChild(chip);
       }
     }
+
     const won = visible && finaleLoaded && !!state.winnerCode;
     $('finaleWinCodeBox').hidden = !won;
     $('finaleWinningCode').textContent = won ? state.winnerCode : '';
-    const showWinner = won && !!state.winner.trim();
-    $('finaleWinnerBox').hidden = !showWinner;
-    $('finaleWinnerName').textContent = showWinner ? state.winner : '';
 
     if (!isAdmin) return;
     $('finaleAdminBadge').textContent = control.revealed ? '公開中' : '非公開';
     $('finaleAdminBadge').classList.toggle('is-public', control.revealed);
-    $('finaleRevealText').textContent = control.revealed ? '現在：参加者に公開中' : '現在：参加者には非表示';
-    $('finaleRevealBtn').textContent = control.revealed ? '🔒 非公開に戻す' : '🎉 参加者に公開する';
-    $('finaleRevealBtn').disabled = !ready || (!control.revealed && !state.prize.trim());
-    $('finalePrizeInput').disabled = !ready;
-    $('finalePrizeSaveBtn').disabled = !ready;
-    $('finaleWinnerInput').disabled = !ready || !state.winnerCode;
-    $('finaleWinnerSaveBtn').disabled = !ready || !state.winnerCode;
+    $('finaleRevealText').textContent = control.revealed
+      ? '現在：参加者に公開中' : '現在：参加者には非表示';
+    $('finaleRevealBtn').textContent = control.revealed
+      ? '🔒 非公開に戻す' : '🎉 参加者に公開する';
+    $('finaleRevealBtn').disabled = !ready; // 景品保存は不要
+
+    $('finaleSelectedText').textContent = selectedLetter
+      ? `✅ ${selectedLetter} を選択中` : 'まだ文字は選ばれていません';
     $('finaleNumberInput').disabled = !ready || !!state.winnerCode;
-    const numberRaw = $('finaleNumberInput').value.trim();
-    const number = Number(numberRaw);
-    const numberOK = numberRaw !== '' && Number.isInteger(number) && number >= 1 && number <= 75;
+    const raw = $('finaleNumberInput').value.trim();
+    const number = Number(raw);
+    const numberOK = raw !== '' && Number.isInteger(number) && number >= 1 && number <= 75;
     const existing = selectedLetter && numberOK &&
       draws.some(item => item.letter === selectedLetter && item.number === number);
-    $('finaleAddBtn').disabled = !ready || !!state.winnerCode || !selectedLetter || !numberOK || draws.length >= 100 || Boolean(existing);
+    $('finaleAddBtn').disabled = !ready || !!state.winnerCode || !selectedLetter ||
+      !numberOK || draws.length >= 100 || Boolean(existing);
     $('finaleUndoBtn').disabled = !ready || draws.length === 0;
-    $('finaleResetBtn').disabled = !ready || (draws.length === 0 && !state.winner && !state.winnerCode);
+    $('finaleResetBtn').disabled = !ready || (draws.length === 0 && !state.winnerCode);
     $('finaleConfirmBtn').disabled = !ready || (!state.winnerCode && draws.length === 0);
-    $('finaleConfirmBtn').textContent = state.winnerCode ? '↶ 当選確定を取り消す' : '🏆 最新コードを当選確定';
+    $('finaleConfirmBtn').textContent = state.winnerCode
+      ? '↶ 当選確定を取り消す' : '🏆 最新コードを当選確定';
     $('finaleAdminLetters').querySelectorAll('button[data-letter]').forEach(button => {
       button.disabled = !ready || !!state.winnerCode || draws.length >= 100;
-      const isSelected = selectedLetter === button.dataset.letter;
-      button.classList.toggle('is-selected', isSelected);
-      button.setAttribute('aria-pressed', String(isSelected));
+      const selected = selectedLetter === button.dataset.letter;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
     });
-    if (finaleLoaded && document.activeElement !== $('finalePrizeInput')) {
-      $('finalePrizeInput').value = state.prize;
-    }
-    if (finaleLoaded && document.activeElement !== $('finaleWinnerInput')) {
-      $('finaleWinnerInput').value = state.winner;
-    }
   }
 
   function unwatch() {
@@ -511,8 +515,9 @@
     if (unwatchFinale) unwatchFinale();
     unwatchFinale = null;
     finaleLoaded = false;
-    state = { prize: '', draws: [], winner: '', winnerCode: '' };
+    state = {draws: [], winnerCode: ''};
   }
+
   function watch() {
     if (unwatchFinale || !fs) return;
     const current = ++generation;
@@ -520,9 +525,7 @@
       if (current !== generation) return;
       const value = snapshot.exists() ? snapshot.data() : {};
       state = {
-        prize: typeof value.prize === 'string' ? value.prize : '',
         draws: cleanDraws(value.draws),
-        winner: typeof value.winner === 'string' ? value.winner : '',
         winnerCode: typeof value.winnerCode === 'string' ? value.winnerCode : ''
       };
       finaleLoaded = true;
@@ -534,12 +537,14 @@
       render();
     });
   }
+
   function syncListener() {
     const permitted = control.revealed || (isAdmin && user?.uid === settings.adminUid);
     if (permitted) watch();
     else unwatch();
     render();
   }
+
   async function save(operation, success) {
     if (!adminReady()) return;
     busy = true;
@@ -567,16 +572,11 @@
     $('finaleNumberInput').addEventListener('keydown', event => {
       if (event.key === 'Enter') $('finaleAddBtn').click();
     });
-    $('finalePrizeSaveBtn').addEventListener('click', () => {
-      const prize = $('finalePrizeInput').value.trim();
-      if (!prize) return say('景品名を入力してください。', true);
-      save(() => fs.setDoc(finaleRef, {prize, updatedAt: fs.serverTimestamp()}, {merge:true}),
-        '景品名を保存しました。');
-    });
     $('finaleRevealBtn').addEventListener('click', () => {
       const revealed = !control.revealed;
-      if (revealed && !state.prize.trim()) return say('先に景品名を保存してください。', true);
-      if (!confirm(revealed ? '参加者に特別抽選と景品名を公開します。よろしいですか？' : '参加者から特別抽選を非表示に戻しますか？')) return;
+      if (!confirm(revealed
+        ? '参加者に特別抽選と景品「参加費全額返金」を公開しますか？'
+        : '参加者から特別抽選を非表示に戻しますか？')) return;
       save(() => fs.setDoc(controlRef, {revealed, updatedAt:fs.serverTimestamp()}, {merge:true}),
         revealed ? '特別抽選を公開しました！' : '特別抽選を非公開に戻しました。');
     });
@@ -612,33 +612,33 @@
       save(() => fs.runTransaction(db, async transaction => {
         const snap = await transaction.get(finaleRef);
         const previous = cleanDraws(snap.exists() ? snap.data().draws : []);
-        transaction.set(finaleRef, {draws: previous.slice(0, -1), winnerCode:'', winner:'', updatedAt:fs.serverTimestamp()}, {merge:true});
+        transaction.set(finaleRef, {
+          draws: previous.slice(0, -1), winnerCode:'', winner:'', updatedAt:fs.serverTimestamp()
+        }, {merge:true});
       }), '最後の組み合わせを取り消しました。');
     });
     $('finaleResetBtn').addEventListener('click', () => {
-      if (!confirm('特別抽選の履歴と当選者表示をリセットしますか？（通常ビンゴは消えません）')) return;
+      if (!confirm('特別抽選の履歴と当選コードをリセットしますか？（通常ビンゴは消えません）')) return;
       if (!confirm('最終確認：本当にリセットしますか？')) return;
-      save(() => fs.setDoc(finaleRef, {draws:[], winner:'', winnerCode:'',updatedAt:fs.serverTimestamp()}, {merge:true}),
-        '特別抽選の履歴をリセットしました。');
+      save(() => fs.setDoc(finaleRef, {
+        draws:[], winnerCode:'', winner:'', updatedAt:fs.serverTimestamp()
+      }, {merge:true}), '特別抽選の履歴をリセットしました。');
     });
     $('finaleConfirmBtn').addEventListener('click', () => {
       const last = state.draws.at(-1);
       if (state.winnerCode) {
-        if (!confirm('当選確定を取り消しますか？当選者名も消えます。')) return;
-        save(() => fs.setDoc(finaleRef, { winnerCode:'', winner:'', updatedAt:fs.serverTimestamp() }, {merge:true}),
-          '当選確定を取り消しました。');
+        if (!confirm('当選確定を取り消しますか？')) return;
+        save(() => fs.setDoc(finaleRef, {
+          winnerCode:'', winner:'', updatedAt:fs.serverTimestamp()
+        }, {merge:true}), '当選確定を取り消しました。');
         return;
       }
       if (!last) return say('まだ抽選コードが登録されていません。', true);
       const code = formatDraw(last);
-      if (!confirm(`カード裏面に ${code} と書かれた人が確認できましたか？\n確認できた場合のみ当選確定してください。`)) return;
-      save(() => fs.setDoc(finaleRef, { winnerCode:code, updatedAt:fs.serverTimestamp() }, {merge:true}),
-        `${code} を当選コードとして確定しました！`);
-    });
-    $('finaleWinnerSaveBtn').addEventListener('click', () => {
-      const winner = $('finaleWinnerInput').value.trim();
-      save(() => fs.setDoc(finaleRef, {winner, updatedAt:fs.serverTimestamp()}, {merge:true}),
-        winner ? '当選者名を保存しました。' : '当選者表示を消しました。');
+      if (!confirm(`カード裏面に ${code} と書かれた人を確認できましたか？\n確認できた場合のみ当選確定してください。`)) return;
+      save(() => fs.setDoc(finaleRef, {
+        winnerCode: code, winner:'', updatedAt:fs.serverTimestamp()
+      }, {merge:true}), `${code} を当選コードとして確定しました！`);
     });
   }
 
@@ -659,7 +659,7 @@
       controlRef = fs.doc(db, 'bingo', 'finaleControl');
       finaleRef = fs.doc(db, 'bingo', 'finaleData');
       fs.onSnapshot(controlRef, {includeMetadataChanges:true}, snapshot => {
-        control = { revealed: snapshot.exists() && snapshot.data().revealed === true };
+        control = {revealed: snapshot.exists() && snapshot.data().revealed === true};
         controlLoaded = !snapshot.metadata.fromCache;
         syncListener();
       }, error => {
@@ -681,4 +681,3 @@
   }
   start();
 })();
-
