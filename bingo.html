@@ -87,24 +87,21 @@
           </div>
           <p class="mode-note">⚠️ 取消・リセットは参加者の画面にも反映されます。操作できるのは、Firestoreで許可した幹事のみです。</p>
         </section>
-        <!-- ① 幹事側： <div id="adminArea"> の内側、最後の </div> の直前に追加 -->
+        <!-- 既存の <section id="finaleAdminPanel" ...> から対応する </section> までを、この内容に置き換える -->
         <section id="finaleAdminPanel" class="admin-panel finale-admin" aria-labelledby="finaleAdminTitle" hidden>
           <div class="section-head">
             <div>
-              <p class="section-overline">SURPRISE / ORGANIZER ONLY</p>
-              <h2 id="finaleAdminTitle">裏面コードで運だめし 🎁</h2>
+              <p class="section-overline">SPECIAL FINALE / ORGANIZER ONLY</p>
+              <h2 id="finaleAdminTitle">🎁 最後の特別抽選</h2>
             </div>
             <span id="finaleAdminBadge" class="finale-admin-badge">非公開</span>
           </div>
-          <p class="admin-subtitle">ビンゴカードの裏面に重複なく印刷したコードを使います。A〜Eの玉と1〜75の数字玉を抽選して「B-23」のように登録。裏面と一致した人が当選です。公開前は参加者には表示されません。</p>
         
-          <label class="finale-label" for="finalePrizeInput">景品名</label>
-          <div class="finale-input-row">
-            <input id="finalePrizeInput" type="text" maxlength="80" placeholder="発表する景品名を入力" disabled>
-            <button id="finalePrizeSaveBtn" type="button" class="btn btn-outline" disabled>景品名を保存</button>
-          </div>
+          <p class="admin-subtitle">ビンゴカードの裏面に書かれた番号で、最後の1人を決めます。A〜Eの玉と1〜75の数字玉を引き、組み合わせを登録してください。</p>
+          <p class="finale-admin-prize">🏆 景品：<strong>参加費全額返金</strong></p>
+        
           <div class="finale-reveal-actions">
-            <strong id="finaleRevealText" class="finale-reveal-text">非公開中</strong>
+            <strong id="finaleRevealText" class="finale-reveal-text">現在：参加者には非表示</strong>
             <button id="finaleRevealBtn" type="button" class="btn btn-primary" disabled>🎉 参加者に公開する</button>
           </div>
         
@@ -116,28 +113,24 @@
             <button type="button" data-letter="D" aria-pressed="false" disabled>D</button>
             <button type="button" data-letter="E" aria-pressed="false" disabled>E</button>
           </div>
-          <h3 class="finale-admin-subhead">② ビンゴ玉の数字（1〜75）を入力</h3>
+          <p id="finaleSelectedText" class="finale-selected-text" role="status">まだ文字は選ばれていません</p>
+        
+          <h3 class="finale-admin-subhead">② 数字玉（1〜75）を入力</h3>
           <div class="finale-input-row">
-            <label class="sr-only" for="finaleNumberInput">ビンゴ玉の数字</label>
+            <label for="finaleNumberInput" class="sr-only">数字玉の番号</label>
             <input id="finaleNumberInput" type="number" min="1" max="75" step="1" inputmode="numeric" placeholder="例：23" disabled>
             <button id="finaleAddBtn" type="button" class="btn btn-primary" disabled>組み合わせを登録 ✨</button>
           </div>
-          <p class="finale-hint">引いた文字と数字をセットで登録します。カード裏面と一致する人がいなければ、両方の玉を戻して再抽選してください。通常のビンゴ抽選履歴には影響しません。</p>
+          <p class="finale-hint">例：Bと23を引いたら「B-23」を登録。カード裏面に同じコードの人がいなければ、玉を戻して引き直してね。</p>
+        
           <div class="finale-admin-actions">
-            <button id="finaleUndoBtn" type="button" class="btn btn-outline" disabled>↶ 最後の組み合わせを取消</button>
+            <button id="finaleUndoBtn" type="button" class="btn btn-outline" disabled>↶ 最後の組み合わせを取り消す</button>
             <button id="finaleResetBtn" type="button" class="btn btn-danger" disabled>特別抽選をリセット</button>
             <button id="finaleConfirmBtn" type="button" class="btn btn-primary" disabled>🏆 最新コードを当選確定</button>
-          </div>
-        
-          <label class="finale-label" for="finaleWinnerInput">当選者名（当選確定後・任意・本人の了承を得て表示）</label>
-          <div class="finale-input-row">
-            <input id="finaleWinnerInput" type="text" maxlength="80" placeholder="1人に決まってから入力" disabled>
-            <button id="finaleWinnerSaveBtn" type="button" class="btn btn-outline" disabled>当選者を保存</button>
           </div>
           <p id="finaleAdminMsg" class="finale-admin-msg" role="status" aria-live="polite"></p>
         </section>
       </div>
-      
       <section class="dashboard" aria-label="抽選状況">
         <article class="latest-card">
           <div class="card-heading"><span class="emoji-label">🎯</span> 最新の抽選番号</div>
@@ -182,33 +175,51 @@
         </div>
         <p class="history-note">※ 新しく出た番号から順に表示しています。</p>
       </section>
-      <!-- ② 参加者側： </main> の直前に追加。発表までは JavaScript と CSS により非表示 -->
-      <section id="finaleSection" class="finale-section" aria-labelledby="finaleTitle" hidden>
-        <div class="finale-sticker">🎊 SECRET FINALE 🎊</div>
-        <h2 id="finaleTitle">最後の大抽選！</h2>
-        <p class="finale-lead">カード裏面のコードが当たった人に、特別な景品！</p>
-        <p id="finalePrize" class="finale-prize"></p>
-        <p class="finale-guide">自分の<strong>ビンゴカードの裏面</strong>をチェック！<br>抽選されたコードと同じなら幹事に申し出てね。</p>
-        <div class="finale-latest-block">
-          <p>最新の組み合わせ</p>
-          <div class="finale-combination" aria-live="polite" aria-atomic="true">
-            <span id="finaleLatestLetter" class="finale-combo-letter">？</span>
-            <span class="finale-combo-hyphen">－</span>
-            <span id="finaleLatestNumber" class="finale-combo-number">？</span>
+      <!-- 既存の <section id="finaleSection" ...> から対応する </section> までを、この内容に置き換える -->
+      <section id="finaleSection" class="finale-section history-section" aria-labelledby="finaleTitle" hidden>
+        <div class="section-head">
+          <div>
+            <p class="section-overline">SPECIAL FINALE</p>
+            <h2 id="finaleTitle">🎁 最後の特別抽選</h2>
           </div>
-          <small id="finaleCount">抽選 0回</small>
+          <span class="history-count">カードの裏面をチェック！</span>
         </div>
-        <h3>これまでの組み合わせ</h3>
-        <div id="finaleHistory" class="finale-history" aria-live="polite">まだ抽選されていません</div>
-        <div id="finaleWinCodeBox" class="finale-winning-code" hidden>
-          🎉 当選コード：<strong id="finaleWinningCode"></strong>
+      
+        <div class="finale-view-card">
+          <p class="finale-mini-label">🎉 FINAL CHANCE 🎉</p>
+          <p class="finale-prize-caption">最後の景品は…</p>
+          <p id="finalePrize" class="finale-prize">参加費全額返金</p>
+      
+          <div class="finale-draw-panel">
+            <p class="card-heading"><span class="emoji-label">🎯</span> 最新の抽選コード</p>
+            <div class="finale-combination" aria-live="polite" aria-atomic="true">
+              <span id="finaleLatestLetter" class="finale-combo-letter">？</span>
+              <span class="finale-combo-hyphen">－</span>
+              <span id="finaleLatestNumber" class="finale-combo-number">？</span>
+            </div>
+            <p id="finaleCount" class="finale-count">抽選 0回</p>
+          </div>
+          <p class="finale-guide">ビンゴカードの<strong>裏面</strong>に書かれたコードと一致したら、幹事に知らせてね！</p>
+      
+          <div id="finaleWinCodeBox" class="finale-winning-code" hidden>
+            🏆 当選コードは <strong id="finaleWinningCode"></strong>！
+          </div>
         </div>
-        <div id="finaleWinnerBox" class="finale-winner" hidden>
-          🏆 当選者：<strong id="finaleWinnerName"></strong>
+      
+        <div class="finale-history-group">
+          <div class="section-head">
+            <div>
+              <p class="section-overline">DRAW HISTORY</p>
+              <h3>これまでの抽選コード 🪩</h3>
+            </div>
+          </div>
+          <div id="finaleHistory" class="history-box finale-history" aria-live="polite">
+            <p class="history-empty">まだ抽選されていません</p>
+          </div>
+          <p class="history-note">※ 新しい組み合わせから順に表示しています。</p>
         </div>
       </section>
     </main>
-
     <footer>
       <div class="footer-stars">✦ <span>★</span> ✦</div>
       <p>高田同窓会ビンゴ大会</p>
