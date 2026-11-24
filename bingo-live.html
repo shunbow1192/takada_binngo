@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#fff8ee">
+  <meta name="description" content="高田同窓会ビンゴ大会の抽選済み番号をスマホからリアルタイムに確認できます。">
+  <title>高田同窓会ビンゴ大会 | 番号確認</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./bingo.css">
+  <script src="./bingo.js" defer></script>
+</head>
+<body>
+  <div class="confetti confetti-a" aria-hidden="true"></div>
+  <div class="confetti confetti-b" aria-hidden="true"></div>
+  <div class="confetti confetti-c" aria-hidden="true"></div>
+
+  <div class="page-shell">
+    <header class="topbar">
+      <a href="bingo.html" class="brand" aria-label="高田同窓会ビンゴ大会へ">
+        <span class="brand-icon" aria-hidden="true">★</span>
+        <span>TAKADA <b>BINGO!</b></span>
+      </a>
+      <span id="statusPill" class="status-pill is-demo" role="status">
+        <span class="status-dot"></span>
+        <span id="statusLabel">接続準備中</span>
+      </span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <span class="hero-deco hero-star" aria-hidden="true">✦</span>
+        <span class="hero-deco hero-sparkle" aria-hidden="true">✳</span>
+        <span class="hero-deco hero-heart" aria-hidden="true">♥</span>
+        <h1>高田同窓会<br><span>ビンゴ大会</span><span class="title-bang">!</span></h1>
+      </section>
+
+      <div id="demoNotice" class="notice" role="status" hidden>
+        🧪 <b>デモ表示中</b>：サンプル番号です。Firebase未設定のため、ほかのスマホとは同期しません。
+      </div>
+      <div id="errorNotice" class="notice error-notice" role="alert" hidden></div>
+
+      <!-- ?admin=1 を付けたときだけ表示される管理者用エリア -->
+      <div id="adminArea" class="admin-toolbar" hidden>
+        <section class="admin-panel">
+          <div class="section-head">
+            <h2>幹事用 管理画面 🛠️</h2>
+            <span class="admin-tag">管理者モード</span>
+          </div>
+          <p class="admin-subtitle">番号を登録すると、参加者全員の画面に自動反映されます。</p>
+          <div class="admin-login-row">
+            <button type="button" id="loginBtn" class="btn btn-primary">Googleでログイン</button>
+            <button type="button" id="logoutBtn" class="btn btn-outline" hidden>ログアウト</button>
+          </div>
+          <div class="account-box" id="accountBox" hidden>
+            <p><strong id="accountEmail"></strong></p>
+            <p>あなたのUID：<code id="accountUid"></code>
+              <button type="button" id="copyUidBtn" class="text-button">コピー</button>
+            </p>
+            <p id="authMessage" class="admin-permissions"></p>
+          </div>
+        </section>
+
+        <section class="admin-panel" aria-labelledby="numberInputTitle">
+          <div class="section-head">
+            <div>
+              <h2 id="numberInputTitle">抽選番号を登録 🎱</h2>
+            </div>
+            <span id="adminDrawCount" class="history-count">0 / 75</span>
+          </div>
+          <p class="field-help">数字を入力するか、下の番号ボードをタップして選んでください。</p>
+          <div class="input-row">
+            <label for="numberInput" class="sr-only">追加する番号</label>
+            <input type="number" id="numberInput" min="1" max="75" inputmode="numeric" placeholder="1〜75" disabled>
+            <button type="button" id="addBtn" class="btn btn-primary" disabled>番号を追加 ✨</button>
+          </div>
+          <p id="inputMessage" class="input-message" role="status" aria-live="polite"></p>
+          <div class="action-row">
+            <button type="button" id="undoBtn" class="btn btn-outline" disabled>↶ 最後の番号を取り消す</button>
+            <button type="button" id="resetBtn" class="btn btn-danger" disabled>全番号をリセット</button>
+          </div>
+          <p class="mode-note">⚠️ 取消・リセットは参加者の画面にも反映されます。操作できるのは、Firestoreで許可した幹事のみです。</p>
+        </section>
+        <!-- 既存の <section id="finaleAdminPanel" ...> から対応する </section> までを、この内容に置き換える -->
+        <section id="finaleAdminPanel" class="admin-panel finale-admin" aria-labelledby="finaleAdminTitle" hidden>
+          <div class="section-head">
+            <div>
+              <h2 id="finaleAdminTitle">🎁 最後の特別抽選</h2>
+            </div>
+            <span id="finaleAdminBadge" class="finale-admin-badge">非公開</span>
+          </div>
+        
+          <p class="admin-subtitle">ビンゴカードの裏面に書かれた番号で、最後の1人を決めます。A〜Eの玉と1〜75の数字玉を引き、組み合わせを登録してください。</p>
+          <p class="finale-admin-prize">🏆 景品：<strong>参加費全額返金</strong></p>
+        
+          <div class="finale-reveal-actions">
+            <strong id="finaleRevealText" class="finale-reveal-text">現在：参加者には非表示</strong>
+            <button id="finaleRevealBtn" type="button" class="btn btn-primary" disabled>🎉 参加者に公開する</button>
+          </div>
+        
+          <h3 class="finale-admin-subhead">① A〜Eの玉を選択</h3>
+          <div id="finaleAdminLetters" class="finale-admin-letters" role="group" aria-label="アルファベット玉を選択">
+            <button type="button" data-letter="A" aria-pressed="false" disabled>A</button>
+            <button type="button" data-letter="B" aria-pressed="false" disabled>B</button>
+            <button type="button" data-letter="C" aria-pressed="false" disabled>C</button>
+            <button type="button" data-letter="D" aria-pressed="false" disabled>D</button>
+            <button type="button" data-letter="E" aria-pressed="false" disabled>E</button>
+          </div>
+          <p id="finaleSelectedText" class="finale-selected-text" role="status">まだ文字は選ばれていません</p>
+        
+          <h3 class="finale-admin-subhead">② 数字玉（1〜75）を入力</h3>
+          <div class="finale-input-row">
+            <label for="finaleNumberInput" class="sr-only">数字玉の番号</label>
+            <input id="finaleNumberInput" type="number" min="1" max="75" step="1" inputmode="numeric" placeholder="例：23" disabled>
+            <button id="finaleAddBtn" type="button" class="btn btn-primary" disabled>組み合わせを登録 ✨</button>
+          </div>
+          <p class="finale-hint">例：Bと23を引いたら「B-23」を登録。カード裏面に同じコードの人がいなければ、玉を戻して引き直してね。</p>
+        
+          <div class="finale-admin-actions">
+            <button id="finaleUndoBtn" type="button" class="btn btn-outline" disabled>↶ 最後の組み合わせを取り消す</button>
+            <button id="finaleResetBtn" type="button" class="btn btn-danger" disabled>特別抽選をリセット</button>
+            <button id="finaleConfirmBtn" type="button" class="btn btn-primary" disabled>🏆 最新コードを当選確定</button>
+          </div>
+          <p id="finaleAdminMsg" class="finale-admin-msg" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+      <section class="dashboard" aria-label="抽選状況">
+        <article class="latest-card">
+          <div class="card-heading"><span class="emoji-label">🎯</span> 最新の抽選番号</div>
+          <div class="ball-wrap">
+            <div id="latestBall" class="bingo-ball is-empty" aria-live="polite" aria-atomic="true">
+              <span id="latestLetter" class="ball-letter">?</span>
+              <span id="latestNumber" class="ball-number">—</span>
+            </div>
+          </div>
+          <p id="latestHelp" class="latest-help">抽選スタートをお楽しみに！</p>
+        </article>
+        <article class="progress-card">
+          <div class="card-heading"><span class="emoji-label">✨</span> 抽選の進み具合</div>
+          <div class="progress-count"><strong id="drawCount">0</strong><span>/ 75個</span></div>
+          <div id="progressTrack" class="progress-track" role="progressbar" aria-label="抽選済み番号の数" aria-valuemin="0" aria-valuemax="75" aria-valuenow="0">
+            <div id="progressBar" class="progress-fill"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="board-section" aria-labelledby="boardTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="boardTitle">番号チェックボード 🔍</h2>
+          </div>
+          <span class="board-legend"><span class="legend-dot"></span> 色つき = 抽選済み</span>
+        </div>
+        <div class="board-frame">
+          <div id="numberBoard" class="number-board" aria-label="1から75までの抽選状況"></div>
+        </div>
+      </section>
+
+      <section class="history-section" aria-labelledby="historyTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="historyTitle">これまでに出た番号 🪩</h2>
+          </div>
+          <span id="historyCount" class="history-count">0個</span>
+        </div>
+        <div id="historyList" class="history-box" aria-live="polite">
+          <p class="history-empty">抽選が始まると、ここに番号が並ぶよ！</p>
+        </div>
+        <p class="history-note">※ 新しく出た番号から順に表示しています。</p>
+      </section>
+      <!-- 既存の <section id="finaleSection" ...> から対応する </section> までを、この内容に置き換える -->
+      <section id="finaleSection" class="finale-section history-section" aria-labelledby="finaleTitle" hidden>
+        <div class="section-head">
+          <div>
+            <h2 id="finaleTitle">🎁 最後の特別抽選</h2>
+          </div>
+          <span id="finaleCount" class="history-count">カードの裏面をチェック！</span>
+        </div>
+      
+        <div class="finale-view-card">
+          <p id="finalePrize" class="finale-prize">参加費全額返金</p>
+      
+          <div class="finale-draw-panel">
+            <div class="finale-combination" aria-live="polite" aria-atomic="true">
+              <span id="finaleLatestLetter" class="finale-combo-letter">？</span>
+              <span class="finale-combo-hyphen">－</span>
+              <span id="finaleLatestNumber" class="finale-combo-number">？</span>
+            </div>
+          </div>
+      
+          <div id="finaleWinCodeBox" class="finale-winning-code" hidden>
+            🏆 当選コードは <strong id="finaleWinningCode"></strong>！
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <div class="footer-stars">✦ <span>★</span> ✦</div>
+      <p>高田同窓会ビンゴ大会</p>
+      <p id="adminLinkWrap" hidden><a class="footer-admin" href="bingo.html">参加者用画面へ戻る</a></p>
+    </footer>
+  </div>
+</body>
+</html>
